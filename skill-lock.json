@@ -1,0 +1,321 @@
+{
+  "lockfileVersion": 1,
+  "generatedAt": "2026-09-26T14:30:00Z",
+  "skillsDir": ".kiro/skills",
+  "totalSkills": 27,
+  "skills": [
+    {
+      "folder": "animate",
+      "skillName": "animate",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 11860,
+      "sha256": "b8ede161270458e6ae2e45e8a1985373515d4c63de5568ddb0f9012d7634356c",
+      "installedAt": "2026-09-26T13:18:38Z",
+      "description": "Build an animation from scratch — decides whether it should animate, picks the tool, curve, duration, interruption and exit. Writes the implementation."
+    },
+    {
+      "folder": "animate-expo",
+      "skillName": "animate-expo",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 17891,
+      "sha256": "9a01a91701e6563c67677dde6b66ab30f066a5341d42c21a90ba51d99679274a",
+      "installedAt": "2026-09-26T13:18:42Z",
+      "description": "Build animations in React Native and Expo with Reanimated, Gesture Handler, Expo Router and expo-haptics. For web animation use animate."
+    },
+    {
+      "folder": "animation-vocabulary",
+      "skillName": "animation-vocabulary",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 13425,
+      "sha256": "40d2b27adfdfeb0570a9f20e7d0255109d9233c50603878bcd0dcd04c923fd94",
+      "installedAt": "2026-09-26T13:18:56Z",
+      "description": "Reverse-lookup glossary that turns a vague motion description into its exact term. For naming an effect, not designing or building one."
+    },
+    {
+      "folder": "apple-design",
+      "skillName": "apple-design",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 23036,
+      "sha256": "77bb63b7043bb93aca2ff4ab040c249484eef35682bb6ff7163433c31d30adc7",
+      "installedAt": "2026-09-26T13:18:59Z",
+      "description": "Apple's approach to fluid, physical interface design translated for the web — springs, gesture-driven UI, interruptible transitions, materials, and typography."
+    },
+    {
+      "folder": "ask-sonner",
+      "skillName": "ask-sonner",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 7233,
+      "sha256": "39f3ee185b3aa2cf70a689052ff078953ce7ba5915ed7a9391d232e9d4dcf57f",
+      "installedAt": "2026-09-26T13:19:05Z",
+      "description": "Complete guide to Sonner, the React toast library — setup, toast types, styling, theming, and troubleshooting."
+    },
+    {
+      "folder": "brandkit",
+      "skillName": "brandkit",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 13866,
+      "sha256": "3713e795cad80acf32b857b66af71bcfee93effd8be6edc61d57c6d37bb3a241",
+      "installedAt": "2026-09-26T14:10:42Z",
+      "description": "Premium brand-kit image generation — brand-guidelines boards, logo systems, identity decks, and visual-world presentations."
+    },
+    {
+      "folder": "brutalist-skill",
+      "skillName": "industrial-brutalist-ui",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 8460,
+      "sha256": "0195bee5cdb44b852d867785d811df2526d9d9a4e42daded7156c1e1bf0833fb",
+      "installedAt": "2026-09-26T14:11:15Z",
+      "description": "Raw mechanical interfaces fusing Swiss typographic print with military terminal aesthetics. Rigid grids, extreme type contrast, analog degradation effects."
+    },
+    {
+      "folder": "emil-design-eng",
+      "skillName": "emil-design-eng",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 27123,
+      "sha256": "ffbe68e6007fb42cb8149f089b400a1ca007d59ba23e8948e2be4476f3175939",
+      "installedAt": "2026-09-25T15:55:17Z",
+      "description": "Encodes Emil Kowalski's complete philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great."
+    },
+    {
+      "folder": "find-animation-opportunities",
+      "skillName": "find-animation-opportunities",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 9808,
+      "sha256": "d52a377819b84a71930f0c822cfe2849f40301605a2d5c7eccbfa3b257700df2",
+      "installedAt": "2026-09-26T13:19:12Z",
+      "description": "Sweeps a codebase or UI for places that don't animate but should, and rejects everything that shouldn't. Read-only — proposes motion with exact values."
+    },
+    {
+      "folder": "gpt-tasteskill",
+      "skillName": "gpt-taste",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 7861,
+      "sha256": "b04883a4a4bb9e87e53e97b2f1aec7536f8fed8301efb8443c5667f142d05220",
+      "installedAt": "2026-09-26T14:11:53Z",
+      "description": "Awwwards-level design engineering — Python-driven layout randomization, AIDA structure, wide editorial typography, gapless bento grids, and GSAP ScrollTriggers."
+    },
+    {
+      "folder": "image-to-code-skill",
+      "skillName": "image-to-code",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 36629,
+      "sha256": "d9d3f9a93043591385fe4eb6912cac8b50146d8a41972d005555c268f2e0c6a0",
+      "installedAt": "2026-09-26T14:09:27Z",
+      "description": "Elite image-to-code skill for Codex — generates design images first, deeply analyzes them, then implements the website to match as closely as possible."
+    },
+    {
+      "folder": "imagegen-frontend-mobile",
+      "skillName": "imagegen-frontend-mobile",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 40437,
+      "sha256": "4eb0d4ce9e08c5d067cf3d85be972baf4645e5cba14f01fb80a69ebc6dabe3b3",
+      "installedAt": "2026-09-26T14:09:27Z",
+      "description": "Elite mobile app image-generation for iOS, Android, and cross-platform — premium screen concepts and flows with clean hierarchy, controlled palettes, and phone mockup framing. Generates images only."
+    },
+    {
+      "folder": "imagegen-frontend-web",
+      "skillName": "imagegen-frontend-web",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 37039,
+      "sha256": "db36e0f82c96526bf07bd9e38803f3e38371f5b9d527eec9acb968a0096b15f3",
+      "installedAt": "2026-09-26T14:09:27Z",
+      "description": "Elite frontend image-direction — generates one separate horizontal image per website section with composition variety, background freedom, varied CTAs, and a consistent palette."
+    },
+    {
+      "folder": "impeccable",
+      "skillName": "impeccable",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 11868,
+      "sha256": "6eeec6ef2028388a17de9f17a56c9cb7dbc7c8e7e1a8c15b831b0ba3e42168ac",
+      "installedAt": "2026-09-25T16:01:02Z",
+      "description": "Use when designing, redesigning, critiquing, auditing, or polishing any frontend interface — UX review, visual hierarchy, accessibility, motion, and design systems."
+    },
+    {
+      "folder": "improve-animations",
+      "skillName": "improve-animations",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 8208,
+      "sha256": "73962447464433476343e2c12cd08ab39cc99a9e5f3c118c5fb54ed897574ef6",
+      "installedAt": "2026-09-26T13:19:18Z",
+      "description": "Surveys a codebase's animation code as a senior motion advisor, produces a prioritized audit and self-contained implementation plans. Read-only on source."
+    },
+    {
+      "folder": "minimalist-skill",
+      "skillName": "minimalist-ui",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 7905,
+      "sha256": "97902250e64bcf4860e387f826afb87d217153054c7c6c9527399e6e33f716e3",
+      "installedAt": "2026-09-26T14:12:41Z",
+      "description": "Clean editorial-style interfaces — warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows."
+    },
+    {
+      "folder": "mobile-native",
+      "skillName": "mobile-native",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 16838,
+      "sha256": "888b7651d66d66dbac4e72b7c554638eb19bd971d686d6cbdf030a5ef3788f55",
+      "installedAt": "2026-09-26T13:19:27Z",
+      "description": "Makes a web app feel native on a phone — CSS and meta-tag fixes for sticky hover, tap highlight, 100vh bug, input zoom, laggy taps, overscroll, notch, and status bar."
+    },
+    {
+      "folder": "output-skill",
+      "skillName": "full-output-enforcement",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 2596,
+      "sha256": "d5a1836193a2aa40a0a3fe726ee954bec876ca69d43d3cb5f1b54c23d573fd74",
+      "installedAt": "2026-09-26T14:12:51Z",
+      "description": "Overrides default LLM truncation behavior — enforces complete code generation, bans all placeholder patterns, and handles token-limit splits cleanly."
+    },
+    {
+      "folder": "pick-ui-library",
+      "skillName": "pick-ui-library",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 4790,
+      "sha256": "675fdce308683256ed617351a9b74d23457a5fbd0a562d9831b9c764b8c5e682",
+      "installedAt": "2026-09-26T13:19:35Z",
+      "description": "Picks the right library for a frontend task from a curated, opinionated list. Only runs when explicitly invoked."
+    },
+    {
+      "folder": "prototype",
+      "skillName": "prototype",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 7837,
+      "sha256": "8c71e2c9b0a424fa27bdcc44a291d22f6c28ec64a05b23a50c043d1be17195ae",
+      "installedAt": "2026-09-26T13:19:39Z",
+      "description": "Builds multiple genuinely different versions of a UI piece behind a visual picker so you can flip through them live and promote the winner. Only runs when explicitly invoked."
+    },
+    {
+      "folder": "redesign-skill",
+      "skillName": "redesign-existing-projects",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 15064,
+      "sha256": "f136c9b6023fff00893dcdbe1ec0af9926c72261a644c27fd18917205a7c1b27",
+      "installedAt": "2026-09-26T14:27:25Z",
+      "description": "Upgrades existing websites and apps to premium quality — audits typography, color, layout, interactivity, content, components, and iconography, then applies targeted fixes."
+    },
+    {
+      "folder": "review-animations",
+      "skillName": "review-animations",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 8407,
+      "sha256": "6ff590d29e436766135aa3d137be1fac2a867165c7257fc315b189361f1873af",
+      "installedAt": "2026-09-26T13:19:44Z",
+      "description": "Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Default to flagging; approval is earned."
+    },
+    {
+      "folder": "soft-skill",
+      "skillName": "high-end-visual-design",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 10565,
+      "sha256": "7574e231ca19e4a4c68feaee249bc69d5522b9ebc5302d85b77d4a80894f0c3c",
+      "installedAt": "2026-09-26T14:13:48Z",
+      "description": "Teaches agency-level UI design — exact fonts, spacing, shadows, card structures (Double-Bezel architecture), and animations that make a website feel expensive."
+    },
+    {
+      "folder": "stitch-skill",
+      "skillName": "stitch-design-taste",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 11855,
+      "sha256": "f7e9f6395623693dbf138d328d167f0f217b9c93bc41fab8f26edaa3ef3e6fdd",
+      "installedAt": "2026-09-26T14:14:36Z",
+      "description": "Semantic Design System Skill for Google Stitch — generates agent-friendly DESIGN.md files enforcing premium, anti-generic UI standards."
+    },
+    {
+      "folder": "taste-skill",
+      "skillName": "design-taste-frontend",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 87547,
+      "sha256": "325e7f8d8ac93f52e3a3100c966983a92638ecbfbfb31500d4f5381e33ab6e10",
+      "installedAt": "2026-09-26T14:09:27Z",
+      "description": "The main anti-slop frontend skill for landing pages, portfolios, and redesigns — reads the brief, infers design direction, sets three dials (Variance/Motion/Density), and ships interfaces that don't look templated."
+    },
+    {
+      "folder": "taste-skill-v1",
+      "skillName": "design-taste-frontend-v1",
+      "source": "github:LeonxlNx/taste-skill",
+      "collection": "taste-skill",
+      "sizeBytes": 21198,
+      "sha256": "62e00e68a749d8704f4579b58c5ddb4e0fb120283086faf8134f37b735f3a4a5",
+      "installedAt": "2026-09-26T14:16:30Z",
+      "description": "The original v1 taste-skill, preserved for backward compatibility. Use only when a project depends on its exact behavior. The current default is taste-skill (v2)."
+    },
+    {
+      "folder": "write-swift",
+      "skillName": "write-swift",
+      "source": "github:emilkowalski/skills",
+      "collection": "emilkowalski",
+      "sizeBytes": 42444,
+      "sha256": "6c9bc90890b5473be3cc598c5728a36844b61d91d10b851b2a3d5a6469c5b8f9",
+      "installedAt": "2026-09-26T13:20:11Z",
+      "description": "How to write modern Swift well — value types, Swift 6 data-race safety, approachable concurrency, protocols and generics, API design, performance, ARC, Swift Testing, and macros."
+    }
+  ],
+  "collections": {
+    "emilkowalski": {
+      "source": "github:emilkowalski/skills",
+      "url": "https://github.com/emilkowalski/skills",
+      "count": 14,
+      "folders": [
+        "animate",
+        "animate-expo",
+        "animation-vocabulary",
+        "apple-design",
+        "ask-sonner",
+        "emil-design-eng",
+        "find-animation-opportunities",
+        "impeccable",
+        "improve-animations",
+        "mobile-native",
+        "pick-ui-library",
+        "prototype",
+        "review-animations",
+        "write-swift"
+      ]
+    },
+    "taste-skill": {
+      "source": "github:LeonxlNx/taste-skill",
+      "url": "https://github.com/LeonxlNx/taste-skill",
+      "count": 13,
+      "folders": [
+        "brandkit",
+        "brutalist-skill",
+        "gpt-tasteskill",
+        "image-to-code-skill",
+        "imagegen-frontend-mobile",
+        "imagegen-frontend-web",
+        "minimalist-skill",
+        "output-skill",
+        "redesign-skill",
+        "soft-skill",
+        "stitch-skill",
+        "taste-skill",
+        "taste-skill-v1"
+      ]
+    }
+  }
+}

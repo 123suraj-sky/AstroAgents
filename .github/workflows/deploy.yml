@@ -1,0 +1,304 @@
+name: Deploy
+
+# ─── Triggers ────────────────────────────────────────────────────────────────
+# Runs only after build.yml completes successfully on master.
+# Pipeline order: Tests → Build → Deploy (Render + Vercel).
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+    branches: ["master"]
+  workflow_dispatch:
+
+# ─── Deploy Guard ─────────────────────────────────────────────────────────────
+# Set DEPLOY_ENABLED to 'true' when Render and Vercel are provisioned.
+# While 'false' every job is skipped and the workflow reports success —
+# safe to merge during development before the services are set up.
+env:
+  DEPLOY_ENABLED: "false"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # never cancel an in-flight deploy
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Gate — skip everything if guard is off or upstream build failed
+  # ───────────────────────────────────────────────────────────────────────────
+  gate:
+    name: Gate — Build Passed
+    runs-on: ubuntu-latest
+    if: |
+      env.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      - name: Confirmed — proceeding with deploy
+        run: echo "✅ Build succeeded. Deploying to Render (backend) and Vercel (frontend)."
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Deploy backend → Render
+  #
+  # How Render deploys work:
+  #   Render exposes a unique Deploy Hook URL per service. Hitting it with a
+  #   POST triggers an immediate redeploy of that service from the latest
+  #   Docker image or Git commit — no SSH, no Docker pull needed here.
+  #
+  # Required GitHub secret:
+  #   RENDER_DEPLOY_HOOK_URL  — found in Render dashboard:
+  #                             Service → Settings → Deploy Hook
+  #
+  # Required GitHub variable:
+  #   RENDER_BACKEND_URL      — e.g. https://astroagents-api.onrender.com
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend → Render
+    runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.result == 'success'
+    environment:
+      name: production-backend
+      url: ${{ vars.RENDER_BACKEND_URL }}
+
+    steps:
+      - name: Trigger Render deploy hook
+        run: |
+          echo "Triggering Render deploy..."
+          RESPONSE=$(curl --silent --show-error \
+            --max-time 30 \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS")
+
+          echo "Response: $BODY"
+          echo "HTTP status: $HTTP_STATUS"
+
+          if [[ "$HTTP_STATUS" != "200" && "$HTTP_STATUS" != "201" ]]; then
+            echo "❌ Render deploy hook failed — HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "✅ Render deploy triggered successfully"
+
+      - name: Wait for Render deploy to complete
+        run: |
+          echo "Waiting for Render service to become healthy..."
+          MAX_RETRIES=20
+          RETRY_INTERVAL=15
+          URL="${{ vars.RENDER_BACKEND_URL }}/health"
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i / $MAX_RETRIES — checking $URL"
+            STATUS=$(curl --silent --output /dev/null \
+              --write-out "%{http_code}" \
+              --max-time 10 \
+              "$URL" || echo "000")
+
+            if [[ "$STATUS" == "200" ]]; then
+              echo "✅ Backend health check passed (HTTP $STATUS)"
+              exit 0
+            fi
+
+            echo "  HTTP $STATUS — waiting ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          done
+
+          echo "❌ Backend did not become healthy after $(( MAX_RETRIES * RETRY_INTERVAL ))s"
+          exit 1
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Deploy frontend → Vercel
+  #
+  # Vercel CLI deploys the frontend/ directory directly.
+  # --prod promotes the deployment to the production URL.
+  #
+  # Required GitHub secrets:
+  #   VERCEL_TOKEN      — personal access token from vercel.com/account/tokens
+  #   VERCEL_ORG_ID     — found in Project → Settings → General
+  #   VERCEL_PROJECT_ID — found in Project → Settings → General
+  #
+  # Required GitHub variable:
+  #   VERCEL_FRONTEND_URL — e.g. https://astroagents.vercel.app
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend → Vercel
+    runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.result == 'success'
+    environment:
+      name: production-frontend
+      url: ${{ vars.VERCEL_FRONTEND_URL }}
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment & project settings
+        run: |
+          vercel pull --yes \
+            --environment=production \
+            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build for Vercel
+        run: |
+          vercel build --prod \
+            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel production
+        id: vercel-deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            2>&1 | tail -1)
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "✅ Deployed to: $DEPLOY_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Frontend health check
+        run: |
+          sleep 5
+          STATUS=$(curl --silent --output /dev/null \
+            --write-out "%{http_code}" \
+            --max-time 10 \
+            "${{ vars.VERCEL_FRONTEND_URL }}")
+
+          if [[ "$STATUS" != "200" ]]; then
+            echo "❌ Frontend health check failed — HTTP $STATUS"
+            exit 1
+          fi
+
+          echo "✅ Frontend health check passed — HTTP $STATUS"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Tag release — runs after both deploys succeed
+  # ───────────────────────────────────────────────────────────────────────────
+  tag-release:
+    name: Tag Release
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success'
+
+    steps:
+      - name: Create release tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha.substring(0, 7);
+            const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const tagName = `release-${date}-${sha}`;
+
+            // ── Create the new tag ──────────────────────────────────────────
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tagName}`,
+                sha: context.sha,
+              });
+              console.log(`✅ Release tag created: ${tagName}`);
+            } catch (e) {
+              console.log(`⚠️  Tag already exists or could not be created: ${e.message}`);
+            }
+
+            // ── Keep only the latest 3 release tags, delete the rest ────────
+            const KEEP = 3;
+
+            // Fetch all tags that match the release-* pattern
+            const { data: refs } = await github.rest.git.listMatchingRefs({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'tags/release-',
+            });
+
+            // Sort descending by tag name (release-YYYYMMDD-sha is
+            // lexicographically sortable, newest last → reverse for newest first)
+            const releaseTags = refs
+              .map(r => r.ref.replace('refs/tags/', ''))
+              .sort()
+              .reverse();
+
+            console.log(`Found ${releaseTags.length} release tag(s). Keeping latest ${KEEP}.`);
+
+            const toDelete = releaseTags.slice(KEEP);
+
+            for (const tag of toDelete) {
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`,
+                });
+                console.log(`🗑️  Deleted old release tag: ${tag}`);
+              } catch (e) {
+                console.log(`⚠️  Could not delete tag ${tag}: ${e.message}`);
+              }
+            }
+
+            if (toDelete.length === 0) {
+              console.log('Nothing to prune.');
+            }
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Notify — report failures
+  # ───────────────────────────────────────────────────────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: |
+      needs.deploy-backend.result == 'failure' ||
+      needs.deploy-frontend.result == 'failure'
+
+    steps:
+      - name: Report failed deploy
+        run: |
+          echo "❌ Deploy failed"
+          echo "  Backend : ${{ needs.deploy-backend.result }}"
+          echo "  Frontend: ${{ needs.deploy-frontend.result }}"
+          echo "  Commit  : ${{ github.sha }}"
+          echo "  Actor   : ${{ github.actor }}"
+          echo "  Run     : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # Uncomment to enable Slack notifications:
+          # curl -s -X POST ${{ secrets.SLACK_WEBHOOK }} \
+          #   -H "Content-Type: application/json" \
+          #   -d '{
+          #     "text": "❌ AstroAgents deploy failed",
+          #     "attachments": [{
+          #       "color": "danger",
+          #       "fields": [
+          #         {"title":"Backend","value":"${{ needs.deploy-backend.result }}","short":true},
+          #         {"title":"Frontend","value":"${{ needs.deploy-frontend.result }}","short":true},
+          #         {"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+          #       ]
+          #     }]
+          #   }'

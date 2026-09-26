@@ -1,0 +1,339 @@
+name: Build
+
+# ─── Triggers ───────────────────────────────────────────────────────────────
+# Runs only after test.yml completes successfully on main or develop.
+# This enforces the pipeline order: Tests → Build → Deploy.
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
+    branches: ["master", "develop"]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/backend
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Gate — abort immediately if tests failed
+  # ─────────────────────────────────────────────────────────────────────────
+  check-tests:
+    name: Gate — Tests Passed
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Tests passed — proceeding with build
+        run: echo "✅ test.yml succeeded. Starting build."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend — Vite production build
+  # ─────────────────────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: check-tests
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Backend — package validation
+  # ─────────────────────────────────────────────────────────────────────────
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: check-tests
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install build
+
+      - name: Validate package build
+        run: python -m build --sdist --wheel --outdir dist/
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Docker — build and push backend image to GHCR
+  # Waits for BOTH builds to pass before pushing any image — ensures we
+  # never push a partial set (backend image only) when frontend build broke.
+  # ─────────────────────────────────────────────────────────────────────────
+  docker-backend:
+    name: Docker — Backend Image
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.tag.outputs.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set image tag
+        id: tag
+        run: echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'master' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Docker — build and push frontend image to GHCR
+  # Also waits for both builds — docker-backend and docker-frontend now both
+  # depend on [build-backend, build-frontend], so neither image is pushed
+  # unless both application builds succeeded.
+  # ─────────────────────────────────────────────────────────────────────────
+  docker-frontend:
+    name: Docker — Frontend Image
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.tag.outputs.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set image tag
+        id: tag
+        run: echo "sha=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'master' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Summary — confirms both images are in GHCR before deploy can proceed
+  # ─────────────────────────────────────────────────────────────────────────
+  build-complete:
+    name: Build Complete
+    runs-on: ubuntu-latest
+    needs: [docker-backend, docker-frontend]
+
+    steps:
+      - name: Confirm images pushed
+        run: |
+          SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
+          echo "✅ Both images pushed to GHCR with tag sha-${SHA}"
+          echo "  - ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:sha-${SHA}"
+          echo "  - ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:sha-${SHA}"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Prune GHCR — keep only the 3 most recent untagged/sha versions per image
+  #
+  # Strategy:
+  #   - "latest" and branch-name tags are always kept (never deleted)
+  #   - sha-* tagged versions are sorted newest-first; everything beyond
+  #     position 3 is deleted from GHCR
+  #   - Runs after build-complete so it never races with a fresh push
+  #
+  # Requires the GITHUB_TOKEN to have packages:write permission (set below).
+  # ─────────────────────────────────────────────────────────────────────────
+  prune-ghcr:
+    name: Prune GHCR — Keep Latest 3
+    runs-on: ubuntu-latest
+    needs: build-complete
+
+    permissions:
+      packages: write
+
+    strategy:
+      matrix:
+        image: [backend, frontend]
+
+    steps:
+      - name: Prune old versions of ${{ matrix.image }} image
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const KEEP = 3;
+            const image = '${{ matrix.image }}';
+            const packageName = image;   // matches the folder name under the org/user
+
+            // ── Fetch all versions of this package ──────────────────────────
+            let versions;
+            try {
+              const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+                package_type: 'container',
+                package_name: packageName,
+                org: context.repo.owner,
+                per_page: 100,
+              });
+              versions = resp.data;
+            } catch {
+              // Fall back to user-scoped packages (for personal accounts)
+              const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
+                package_type: 'container',
+                package_name: packageName,
+                username: context.repo.owner,
+                per_page: 100,
+              });
+              versions = resp.data;
+            }
+
+            console.log(`Found ${versions.length} version(s) for ${image}`);
+
+            // ── Separate protected tags from sha-* candidates ───────────────
+            // Keep: "latest", branch names (no prefix). Delete: sha-* beyond KEEP.
+            const shaVersions = versions
+              .filter(v => {
+                const tags = v.metadata?.container?.tags ?? [];
+                // Include only versions that have at least one sha- tag
+                return tags.some(t => t.startsWith('sha-'));
+              })
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // newest first
+
+            console.log(`  sha-tagged versions: ${shaVersions.length}`);
+
+            const toDelete = shaVersions.slice(KEEP);
+            console.log(`  Keeping: ${Math.min(shaVersions.length, KEEP)} | Deleting: ${toDelete.length}`);
+
+            for (const v of toDelete) {
+              const tags = v.metadata?.container?.tags ?? [];
+              console.log(`  🗑️  Deleting version ${v.id} (tags: ${tags.join(', ') || 'untagged'}, created: ${v.created_at})`);
+              try {
+                // Try org-scoped first
+                await github.rest.packages.deletePackageVersionForOrg({
+                  package_type: 'container',
+                  package_name: packageName,
+                  org: context.repo.owner,
+                  package_version_id: v.id,
+                });
+              } catch {
+                // Fall back to user-scoped
+                await github.rest.packages.deletePackageVersionForUser({
+                  package_type: 'container',
+                  package_name: packageName,
+                  username: context.repo.owner,
+                  package_version_id: v.id,
+                });
+              }
+            }
+
+            if (toDelete.length === 0) {
+              console.log('  Nothing to prune.');
+            }
