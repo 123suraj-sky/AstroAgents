@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 
-
 app = FastAPI(
 	title="AstroAgents API",
 	version="0.1.0",
