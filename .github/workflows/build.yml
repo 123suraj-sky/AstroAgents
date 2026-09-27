@@ -286,13 +286,21 @@ jobs:
               versions = resp.data;
             } catch {
               // Fall back to user-scoped packages (for personal accounts)
-              const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
-                package_type: 'container',
-                package_name: packageName,
-                username: context.repo.owner,
-                per_page: 100,
-              });
-              versions = resp.data;
+              try {
+                const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
+                  package_type: 'container',
+                  package_name: packageName,
+                  username: context.repo.owner,
+                  per_page: 100,
+                });
+                versions = resp.data;
+              } catch (error) {
+                if (error.status === 404) {
+                  console.log(`Package ${packageName} was not found; skipping prune.`);
+                  return;
+                }
+                throw error;
+              }
             }
 
             console.log(`Found ${versions.length} version(s) for ${image}`);
